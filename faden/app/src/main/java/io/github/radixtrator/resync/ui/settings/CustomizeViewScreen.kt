@@ -2,17 +2,15 @@
 
 package io.github.radixtrator.resync.ui.settings
 
+import androidx.compose.foundation.layout.height
 import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,7 +59,7 @@ import io.github.radixtrator.resync.i18n.t
  * the size half is here, as Small / Normal / Large.
  */
 @Composable
-fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
+fun CustomizeViewScreen(initial: PostLayout, container: AppContainer, highlight: String? = null) {
     val nav = LocalNavigator.current
     val settings by container.settings.settings.collectAsStateWithLifecycle()
     var layout by rememberSaveable { mutableStateOf(initial) }
@@ -91,7 +89,7 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                 )
             },
         ) { padding ->
-            Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
+            SettingsColumn(padding, highlight, page = "customize") {
                 // Sync's chip row runs from the richest layout to the plainest.
                 LargeHeader(title = t("View type")) {
                     PostLayout.entries.reversed().forEach { option ->

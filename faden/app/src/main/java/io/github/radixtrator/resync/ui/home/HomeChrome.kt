@@ -122,6 +122,7 @@ import io.github.radixtrator.resync.ui.settings.SettingsCategory
 import io.github.radixtrator.resync.ui.navigation.SwipeModeRoute
 import io.github.radixtrator.resync.ui.navigation.SubmitRoute
 import io.github.radixtrator.resync.ui.navigation.UserRoute
+import io.github.radixtrator.resync.ui.settings.SettingsPeek
 import io.github.radixtrator.resync.ui.theme.FadenAccents
 import io.github.radixtrator.resync.ui.theme.LocalDarkTheme
 import io.github.radixtrator.resync.i18n.t
@@ -184,11 +185,13 @@ fun ShellScaffold(
     // Tablet mode: on a wide screen the Posts / Explore / Inbox bar becomes a rail down the left edge, or the right
     // one with "Navigation on the right" (which brings the rail on its own, Tablet mode or not).
     val settings = LocalSettings.current
-    val rail = home && (settings.tabletMode || settings.navRailRight) && LocalConfiguration.current.screenWidthDp >= 600
+    // Settings › "View in feed" shows the feed as it is, without its navigation.
+    val navigation = home && !SettingsPeek.active
+    val rail = navigation && (settings.tabletMode || settings.navRailRight) && LocalConfiguration.current.screenWidthDp >= 600
     val railRight = rail && settings.navRailRight
     // Drawer navigation: no bottom bar; the avatar opens a side drawer. The rail wins on wide screens.
-    val drawer = home && !rail && settings.drawerNavigation
-    val bar = home && !rail && !drawer
+    val drawer = navigation && !rail && settings.drawerNavigation
+    val bar = navigation && !rail && !drawer
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // The rail pads itself by the system bars on its side (cutout, gesture inset), so the page clears that too.
     val layoutDirection = LocalLayoutDirection.current

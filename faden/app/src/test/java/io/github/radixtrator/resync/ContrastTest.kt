@@ -8,6 +8,7 @@ import io.github.radixtrator.resync.ui.theme.THEME_SEEDS
 import io.github.radixtrator.resync.ui.theme.ToneScheme
 import io.github.radixtrator.resync.ui.theme.Tones
 import io.github.radixtrator.resync.ui.theme.fadenColorScheme
+import io.github.radixtrator.resync.ui.settings.rowTint
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -64,6 +65,22 @@ class ContrastTest {
         // Classic is Sync's fixed palette: its failures are how Sync shipped, so they're printed, not asserted.
         if (classic.isNotEmpty()) println("Classic (Sync's palette) contrast shortfalls:\n" + classic.joinToString("\n"))
         assertTrue(bad.isEmpty(), "Contrast failures:\n" + bad.joinToString("\n"))
+    }
+
+    @Test
+    fun switchedOnAndFlashingSettingsRowsStayReadable() {
+        // A switched-on settings row is tinted with CHECKED_ROW_ALPHA of the primary; a search result flashes the full
+        // primary. Both have to keep their text readable.
+        val (bad, classic) = failures { s ->
+            val on = rowTint(s, s.surface, s.onSurface, checked = true, flash = 0f)
+            val flashing = rowTint(s, s.surface, s.onSurface, checked = true, flash = 1f)
+            listOfNotNull(
+                need("switched-on row text", on.content, on.container, 4.5),
+                need("flashing row text", flashing.content, flashing.container, 4.5),
+            ).joinToString().ifEmpty { null }
+        }
+        assertTrue(bad.isEmpty(), bad.joinToString("\n"))
+        assertTrue(classic.isEmpty(), "Classic: " + classic.joinToString("\n"))
     }
 
     @Test

@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.settings
 
+import androidx.compose.foundation.layout.PaddingValues
 import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -74,7 +75,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
                 )
             },
         ) { padding ->
-            LazyColumn(Modifier.padding(padding).fillMaxSize().imePadding()) {
+            LazyColumn(Modifier.padding(padding).fillMaxSize().imePadding(), contentPadding = PaddingValues(bottom = ViewInFeedClearance)) {
                 item(key = "header") {
                     LargeHeader(title = type.title) {
                         if (entries.isNotEmpty()) HeaderChip(label = t("Remove all"), icon = Symbols.Delete, onClick = { confirmClear = true })

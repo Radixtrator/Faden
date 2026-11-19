@@ -74,6 +74,20 @@ class Navigator(
         while (backStack.size > 1 && predicate(backStack.last())) backStack.removeAt(backStack.lastIndex)
     }
 
+    /**
+     * Takes the top screens off while [predicate] holds for them, never the root, and returns them bottom first, to
+     * put back later with [pushAll] (Settings › "View in feed" uncovers the page under the settings this way).
+     */
+    fun takeWhile(predicate: (NavKey) -> Boolean): List<NavKey> {
+        val taken = ArrayDeque<NavKey>()
+        while (backStack.size > 1 && predicate(backStack.last())) taken.addFirst(backStack.removeAt(backStack.lastIndex))
+        return taken.toList()
+    }
+
+    fun pushAll(routes: List<NavKey>) {
+        backStack.addAll(routes)
+    }
+
     /** Swaps the current screen, e.g. the submit form for the post it created. */
     fun replaceTop(route: NavKey) {
         if (inListPane) closeDetailPane()

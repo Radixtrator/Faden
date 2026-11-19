@@ -28,7 +28,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,7 +36,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -176,7 +174,7 @@ private val SettingsCategory.icon: ImageVector
 
 /** Sync's settings: the categories at [category] null, else that category's page. */
 @Composable
-fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) {
+fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null, highlight: String? = null) {
     val nav = LocalNavigator.current
     val settings by container.settings.settings.collectAsStateWithLifecycle()
     // The root page's search: null when closed.
@@ -233,7 +231,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                 }
             },
         ) { padding ->
-            Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
+            SettingsColumn(padding, highlight, page = category?.name ?: "settings", bar = scrollBehavior.state) {
                 val q = query
                 if (category == null && q != null) {
                     SearchResults(q, settings.layout)
@@ -272,7 +270,16 @@ private fun SearchResults(query: String, layout: PostLayout) {
     }
     results.forEach { entry ->
         ListItem(
-            onClick = { nav.push(entry.open(layout)) },
+            // The row itself scrolls into view and flashes, on the pages that can.
+            onClick = {
+                nav.push(
+                    when (val route = entry.open(layout)) {
+                        is SettingsRoute -> route.copy(highlight = entry.title)
+                        is CustomizeViewRoute -> route.copy(highlight = entry.title)
+                        else -> route
+                    },
+                )
+            },
             overlineContent = { Text(entry.place) },
             supportingContent = entry.summary?.let { { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) } },
         ) { Text(entry.title) }
@@ -590,10 +597,15 @@ internal fun Section(title: String, divider: Boolean = true) {
 /** A switch row; tapping anywhere on it flips the switch. */
 @Composable
 internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
-    // One target with toggle semantics: the row is the toggleable, the switch only shows the state.
+    val jump = rememberRowJump(title)
+    val style = rowStyle(checked, jump.flash())
+    // One target with toggle semantics: the row is the toggleable, the switch only shows the state. Switched on, the
+    // row takes a tint of the accent, so what's on stands out while scanning a page.
     ListItem(
         checked = checked,
         onCheckedChange = onChange,
+        modifier = jump.modifier.then(style.modifier),
+        colors = style.colors,
         supportingContent = subtitle?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = null) },
     ) { Text(title) }
@@ -603,8 +615,12 @@ internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange
 @Composable
 internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
+    val jump = rememberRowJump(title)
+    val style = rowStyle(checked = false, flash = jump.flash())
     ListItem(
         onClick = { open = true },
+        modifier = jump.modifier.then(style.modifier),
+        colors = style.colors,
         supportingContent = { Text(label(selected)) },
     ) { Text(title) }
     if (open) {
