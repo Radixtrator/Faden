@@ -57,7 +57,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -87,6 +89,7 @@ import io.github.radixtrator.resync.ui.common.DismissibleMedia
 import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
 import io.github.radixtrator.resync.ui.common.PlaybackHandoff
 import io.github.radixtrator.resync.ui.common.dataSavingActive
+import io.github.radixtrator.resync.ui.common.dragShield
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import kotlinx.coroutines.delay
@@ -291,17 +294,17 @@ private fun VideoPlayer(
             position = player.currentPosition
         }
     }
-    BackHandler(enabled = panelOpen) { panelOpen = false }
-
     // Media › "Close videos by": by default a fling up or down closes, a tap shows and hides the controls, and ⋮ opens
-    // the panel. With "Single tap", a tap closes, a swipe up shows and hides the controls instead (as the image viewer's
-    // swipe up brings its bar), and a downward fling still closes with "Swipe to close".
+    // the panel, which Back and a tap close first. With "Single tap", a tap, Back and a fling up or down (with "Swipe to
+    // close") close the player whatever is showing, and holding the video hides and shows the controls (as holding a
+    // picture does the image viewer's bar).
     val tapCloses = settings.tapToCloseVideos
+    val haptics = LocalHapticFeedback.current
+    BackHandler(enabled = panelOpen && !tapCloses) { panelOpen = false }
     DismissibleMedia(
         onDismiss = onClose,
-        enabled = !panelOpen && !zoomed,
+        enabled = (!panelOpen || tapCloses) && !zoomed,
         dismissOnDrag = settings.swipeToClose,
-        onSwipeUp = if (tapCloses) ({ controls = !controls }) else null,
     ) {
         Box(Modifier.fillMaxSize()) {
             // A TextureView rather than PlayerView's default SurfaceView: a SurfaceView ignores Compose's
@@ -326,13 +329,29 @@ private fun VideoPlayer(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .zoomGestures(zoom, onTap = {
-                        when {
-                            panelOpen -> panelOpen = false
-                            tapCloses -> onClose()
-                            else -> controls = !controls
-                        }
-                    }),
+                    .zoomGestures(
+                        zoom,
+                        onTap = {
+                            when {
+                                tapCloses -> onClose()
+                                panelOpen -> panelOpen = false
+                                else -> controls = !controls
+                            }
+                        },
+                        onLongPress = if (tapCloses) {
+                            {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (controls || panelOpen) {
+                                    controls = false
+                                    panelOpen = false
+                                } else {
+                                    controls = true
+                                }
+                            }
+                        } else {
+                            null
+                        },
+                    ),
             )
             error?.let { message ->
                 Column(
@@ -356,6 +375,8 @@ private fun VideoPlayer(
                     Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
+                        // Closing by a tap, the media takes vertical drags whatever shows, but not ones that start here.
+                        .then(if (tapCloses) Modifier.dragShield() else Modifier)
                         .background(if (panelOpen) MediaPanelColor else Color.Transparent),
                 ) {
                     if (settings.videoSeekBar) {

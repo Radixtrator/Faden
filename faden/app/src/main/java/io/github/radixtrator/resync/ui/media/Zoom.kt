@@ -106,16 +106,17 @@ internal class ZoomState(private val onZoomChange: (Boolean) -> Unit = {}) {
 }
 
 /**
- * Taps, double taps and pinches for [state]. Single-finger drags are left alone at 1x (for a pager or
+ * Taps, double taps, long presses and pinches for [state]. Single-finger drags are left alone at 1x (for a pager or
  * swipe-to-dismiss) and pan once zoomed; let go of a pan and the media glides on and slows to a stop ([ZoomFling]).
  * A tap that stops a glide doesn't count as a tap.
  */
-internal fun Modifier.zoomGestures(state: ZoomState, onTap: () -> Unit): Modifier = this
+internal fun Modifier.zoomGestures(state: ZoomState, onTap: () -> Unit, onLongPress: (() -> Unit)? = null): Modifier = this
     .onSizeChanged { state.bounds = it.toSize() }
-    .pointerInput(state) {
+    .pointerInput(state, onLongPress != null) {
         detectTapGestures(
             onTap = { if (state.stoppedFling) state.stoppedFling = false else onTap() },
             onDoubleTap = { state.toggle() },
+            onLongPress = onLongPress?.let { press -> { press() } },
         )
     }
     .pointerInput(state) {

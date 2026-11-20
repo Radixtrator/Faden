@@ -42,7 +42,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
@@ -55,6 +57,7 @@ import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.DismissibleMedia
+import io.github.radixtrator.resync.ui.common.dragShield
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.theme.Motion
 import kotlinx.coroutines.Dispatchers
@@ -62,28 +65,34 @@ import kotlinx.coroutines.withContext
 
 /**
  * Sync's image viewer, with its control bar (download, host and URL, resolution, file size, then Comments / Open in
- * browser / Copy / Share). Media › "Close images by": a single tap closes it and swiping up slides the bar in from
- * the bottom (a downward fling closes it too, with "Swipe to close"); or swiping up or down closes it and a tap shows
- * and hides the bar.
+ * browser / Copy / Share). Media › "Close images by":
+ * - "Single tap": a tap closes it and swiping up slides the bar in from the bottom (a downward fling closes it too,
+ *   with "Swipe to close"); with the bar showing, a tap or Back closes the bar first.
+ * - "Single tap, hold for the bar": a tap, Back and a fling up or down (with "Swipe to close") close it whether the bar
+ *   is showing or not, and holding the picture shows and hides the bar.
+ * - "Swiping up or down": a swipe closes it and a tap shows and hides the bar.
  */
 @Composable
 fun ImageViewerScreen(urls: List<String>, start: Int, postId: String?, downloads: MediaDownloads, onClose: () -> Unit) {
     val pager = rememberPagerState(initialPage = start) { urls.size }
-    // Zoomed pages own their drags (panning), so swipe-to-dismiss is off while zoomed. With the info
-    // sheet open, a tap or Back closes the sheet instead.
+    // Zoomed pages own their drags (panning), so swipe-to-dismiss is off while zoomed. Except when holding for the
+    // bar, Back closes the info sheet first.
     val zoomed = remember { mutableStateMapOf<Int, Boolean>() }
     var infoOpen by rememberSaveable { mutableStateOf(false) }
     val download = rememberDownloader(downloads)
     val settings = LocalSettings.current
     val tapCloses = settings.tapToClose
-    BackHandler(enabled = infoOpen) { infoOpen = false }
+    val holdForBar = tapCloses && settings.holdForBar
+    val haptics = LocalHapticFeedback.current
+    BackHandler(enabled = infoOpen && !holdForBar) { infoOpen = false }
     DismissibleMedia(
         onDismiss = onClose,
-        // Closing by tap, the open bar takes vertical drags; closing by swipe, a swipe still closes with it showing.
-        enabled = zoomed[pager.currentPage] != true && (!tapCloses || !infoOpen),
+        // With "Single tap", the open bar takes vertical drags. Otherwise a swipe still closes with the bar showing;
+        // holding for the bar, except one that starts on the bar (dragShield below).
+        enabled = zoomed[pager.currentPage] != true && (!tapCloses || holdForBar || !infoOpen),
         dismissOnDrag = !tapCloses || settings.swipeToClose,
         // Without onSwipeUp, a fling either way closes.
-        onSwipeUp = if (tapCloses) ({ infoOpen = true }) else null,
+        onSwipeUp = if (tapCloses && !holdForBar) ({ infoOpen = true }) else null,
         // The page it was opened from, blurred.
         backdrop = { BlurredScreenBackdrop() },
     ) {
@@ -94,9 +103,17 @@ fun ImageViewerScreen(urls: List<String>, start: Int, postId: String?, downloads
                     onTap = {
                         when {
                             !tapCloses -> infoOpen = !infoOpen
-                            infoOpen -> infoOpen = false
+                            infoOpen && !holdForBar -> infoOpen = false
                             else -> onClose()
                         }
+                    },
+                    onLongPress = if (holdForBar) {
+                        {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            infoOpen = !infoOpen
+                        }
+                    } else {
+                        null
                     },
                     onZoomChange = { zoomed[page] = it },
                 )
@@ -121,7 +138,7 @@ fun ImageViewerScreen(urls: List<String>, start: Int, postId: String?, downloads
                 visible = infoOpen,
                 enter = slideInVertically(Motion.enter()) { it },
                 exit = slideOutVertically(Motion.exit()) { it },
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.BottomCenter).then(if (holdForBar) Modifier.dragShield() else Modifier),
             ) {
                 val url = urls[pager.currentPage]
                 ImageInfoSheet(url, postId, downloads, onDownload = { download(url) }, onClose = { infoOpen = false })
@@ -169,7 +186,7 @@ private const val FULL_RES_ZOOM = 2f
 
 /** Pinch/double-tap zoom that leaves single-finger swipes to the pager while not zoomed. */
 @Composable
-private fun ZoomableImage(url: String, onTap: () -> Unit, onZoomChange: (Boolean) -> Unit) {
+private fun ZoomableImage(url: String, onTap: () -> Unit, onLongPress: (() -> Unit)?, onZoomChange: (Boolean) -> Unit) {
     val context = LocalContext.current
     val zoom = remember { ZoomState(onZoomChange) }
     // About twice the screen, enough for 2x zoom to stay sharp; the pager keeps neighbours composed, so full-size
@@ -184,7 +201,7 @@ private fun ZoomableImage(url: String, onTap: () -> Unit, onZoomChange: (Boolean
     var fullRes by remember(url) { mutableStateOf(false) }
     val deep by remember { derivedStateOf { zoom.scale > FULL_RES_ZOOM } }
     if (deep) fullRes = true
-    Box(Modifier.fillMaxSize().zoomGestures(zoom, onTap).zoomTransform(zoom)) {
+    Box(Modifier.fillMaxSize().zoomGestures(zoom, onTap, onLongPress).zoomTransform(zoom)) {
         SubcomposeAsyncImage(
             model = request,
             contentDescription = null,

@@ -125,7 +125,7 @@ object SettingsIndex {
                 row(SettingsCategory.MESSAGING, t("Watched communities"), t("A notification for each new post"), "notifications subreddit benachrichtigungen unterlases follow abonnieren beobachten"),
                 row(SettingsCategory.MESSAGING, t("Watched posts"), t("New comments are checked every hour"), "notifications benachrichtigungen follow beobachten folgen"),
 
-                row(SettingsCategory.MEDIA, t("Close images by"), t("Single tap, or swiping up or down"), "viewer betrachter bildansicht close tap swipe schließen tippen wischen"),
+                row(SettingsCategory.MEDIA, t("Close images by"), t("Single tap, or swiping up or down"), "viewer betrachter bildansicht close tap swipe hold bar schließen tippen wischen halten leiste"),
                 row(SettingsCategory.MEDIA, t("Close videos by"), t("Swiping up or down, or a single tap"), "player video tap tippen schließen"),
                 row(SettingsCategory.MEDIA, t("Swipe to close"), t("Fling videos and images to close them"), "viewer betrachter bildansicht fling close schnippen schließen"),
                 row(SettingsCategory.MEDIA, t("Always show download button"), t("Keep a download button on screen while viewing an image"), "save speichern herunterladen download viewer betrachter bildansicht"),
