@@ -444,18 +444,24 @@ data class Settings(
     /** Settings › search: the last searches a result was picked from, newest first ([rememberSettingsSearch]). */
     val recentSettingsSearches: List<String> = emptyList(),
     /**
-     * Media › "Close images by": a single tap (true; swiping up then slides in the control bar) or swiping up or
-     * down (false; a tap then shows and hides the bar).
+     * Media › "Close images by": a single tap (true; swiping up then slides in the control bar, see [holdForBar]) or
+     * swiping up or down (false; a tap then shows and hides the bar).
      */
     val tapToClose: Boolean = true,
     /**
-     * Media › "Close videos by": a single tap (true; swiping up then shows and hides the controls, and a downward fling
-     * closes it too, with [swipeToClose]) or swiping up or down (false, the default; a tap shows and hides the controls).
+     * Media › "Close images by": "Single tap, hold for the bar", with [tapToClose]. A tap, Back and, with [swipeToClose],
+     * a fling up or down close the image whether the bar is showing or not, and holding the picture shows and hides
+     * the bar.
+     */
+    val holdForBar: Boolean = false,
+    /**
+     * Media › "Close videos by": a single tap (true; so do Back and, with [swipeToClose], a fling up or down, and holding
+     * the video hides and shows the controls) or swiping up or down (false, the default; a tap shows and hides the controls).
      */
     val tapToCloseVideos: Boolean = false,
     /**
-     * Media › "Swipe to close": videos with a fling up or down, and images that close by a tap with a downward one (so do
-     * videos with [tapToCloseVideos]).
+     * Media › "Swipe to close": videos with a fling up or down, and images that close by a tap with a downward one (up
+     * or down with [holdForBar]).
      */
     val swipeToClose: Boolean = true,
     /** Media › "Always show download button": the image viewer keeps a download button on screen, not only in its bar. */

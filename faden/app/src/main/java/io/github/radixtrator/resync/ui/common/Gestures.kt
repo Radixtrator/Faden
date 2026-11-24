@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -30,6 +31,10 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.navigationevent.DirectNavigationEventInput
 import androidx.navigationevent.NavigationEvent
@@ -51,9 +56,11 @@ private suspend fun PointerInputScope.claimDrags(
     scope: CoroutineScope,
     onDelta: suspend (Float) -> Unit,
     onEnd: suspend (velocity: Float) -> Unit,
+    skip: (Offset) -> Boolean = { false },
 ) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        if (skip(down.position)) return@awaitEachGesture
         // Tracked from the first touch, not just once claimed: a quick flick is over in a few events, too few to
         // measure its speed from what's left after the slop.
         val tracker = VelocityTracker().apply { addPosition(down.uptimeMillis, down.position) }
@@ -86,11 +93,35 @@ private suspend fun PointerInputScope.claimDrags(
     }
 }
 
+/** Where a [DismissibleMedia]'s content has put [dragShield]s, in root coordinates. */
+private val LocalDragShields = compositionLocalOf<MutableMap<Any, Rect>?> { null }
+
+/**
+ * Inside a [DismissibleMedia], touches that start on this element (an open bar or panel) stay on it: a drag doesn't
+ * move or close the media, and neither a drag nor a tap on its empty parts reaches the media below (a sibling under
+ * a pointer input doesn't get the touch). Nothing is consumed, so its buttons and sliders work as before.
+ */
+@Composable
+internal fun Modifier.dragShield(): Modifier {
+    val shields = LocalDragShields.current ?: return this
+    val key = remember { Any() }
+    DisposableEffect(shields) { onDispose { shields.remove(key) } }
+    return this
+        .onGloballyPositioned { shields[key] = it.boundsInRoot() }
+        .pointerInput(Unit) {
+            awaitEachGesture {
+                do {
+                    val event = awaitPointerEvent()
+                } while (event.changes.any { it.pressed })
+            }
+        }
+}
+
 /**
  * Fling media up or down to close it, like Sync's viewer. The backdrop fades as it moves. With
  * [onSwipeUp], only a downward fling closes it: swiping up calls that instead (Sync's info sheet) and
  * the media springs back. [dismissOnDrag] false (Sync's "Swipe to close" off) keeps the media from closing on a
- * fling; a swipe up still reaches [onSwipeUp].
+ * fling; a swipe up still reaches [onSwipeUp]. Drags that start on a [dragShield] in [content] are left alone.
  */
 @Composable
 fun DismissibleMedia(
@@ -110,6 +141,9 @@ fun DismissibleMedia(
     val scope = rememberCoroutineScope()
     var height by remember { mutableIntStateOf(1) }
     val swipeUp by rememberUpdatedState(onSwipeUp)
+    val shields = remember { HashMap<Any, Rect>() }
+    // Read only in the gesture, so updating it doesn't recompose.
+    val coords = remember { mutableStateOf<LayoutCoordinates?>(null) }
     // Read only from the draw and layer blocks below, so a drag redraws without recomposing the media.
     fun progress(): Float {
         val travel = if (swipeUp != null) offset.value.coerceAtLeast(0f) else abs(offset.value)
@@ -119,6 +153,7 @@ fun DismissibleMedia(
         Modifier
             .fillMaxSize()
             .onSizeChanged { height = it.height }
+            .onGloballyPositioned { coords.value = it }
             .drawBehind { drawRect(Color.Black.copy(alpha = 1f - progress() * 0.85f)) }
             .pointerInput(enabled, dismissOnDrag, onSwipeUp != null) {
                 if (!enabled || (!dismissOnDrag && onSwipeUp == null)) return@pointerInput
@@ -143,6 +178,10 @@ fun DismissibleMedia(
                             else -> offset.animateTo(0f, settle, initialVelocity = velocity)
                         }
                     },
+                    skip = { at ->
+                        val root = coords.value?.takeIf { it.isAttached }?.localToRoot(at)
+                        root != null && shields.values.any { it.contains(root) }
+                    },
                 )
             },
     ) {
@@ -156,7 +195,7 @@ fun DismissibleMedia(
                     scaleX = s
                     scaleY = s
                 },
-        ) { content() }
+        ) { CompositionLocalProvider(LocalDragShields provides shields) { content() } }
     }
 }
 

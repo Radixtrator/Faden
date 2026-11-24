@@ -445,16 +445,27 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
         }
         SettingsCategory.MESSAGING -> MessagingRows(container, settings)
         SettingsCategory.MEDIA -> {
-            Choice(t("Close images by"), listOf(true, false), settings.tapToClose, { if (it) t("Single tap") else t("Swiping up or down") }) { v -> update { it.copy(tapToClose = v) } }
+            // Three ways, kept in two flags: (tapToClose, holdForBar).
+            Choice(
+                t("Close images by"),
+                listOf(true to false, true to true, false to false),
+                settings.tapToClose to (settings.tapToClose && settings.holdForBar),
+                { (tap, hold) ->
+                    when {
+                        hold -> t("Single tap, hold for the bar")
+                        tap -> t("Single tap")
+                        else -> t("Swiping up or down")
+                    }
+                },
+            ) { (tap, hold) -> update { it.copy(tapToClose = tap, holdForBar = hold) } }
             // Default first, unlike images: videos close by swiping unless you pick a tap.
             Choice(t("Close videos by"), listOf(false, true), settings.tapToCloseVideos, { if (it) t("Single tap") else t("Swiping up or down") }) { v -> update { it.copy(tapToCloseVideos = v) } }
             // Images that close by swiping always do; the toggle covers the ones that close by a tap, and videos.
             Toggle(
                 t("Swipe to close"),
                 when {
-                    settings.tapToClose && settings.tapToCloseVideos -> t("Fling images and videos down to close them")
+                    settings.tapToClose && settings.holdForBar -> t("Fling images and videos up or down to close them")
                     settings.tapToClose -> t("Fling videos up or down, and images down, to close them")
-                    settings.tapToCloseVideos -> t("Fling videos down to close them")
                     else -> t("Fling videos up or down to close them")
                 },
                 settings.swipeToClose,
