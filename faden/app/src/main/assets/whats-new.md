@@ -6,6 +6,9 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.14.2
+- German reads more naturally: everyday words like Feed, Flair, Backup, Link and Sub, with a few r/ich_iel favorites kept (Lases, Pfosten, Faden, Hochwählen, Edith)
+
 ## 0.14.1
 - Post options has a Save row, so you can save or unsave a post from the ⋮ menu
 - List, Compact and Smaller cards can show Save, Hide, Share and Mod tools buttons under each post. Turn them on in Customize view › Buttons
