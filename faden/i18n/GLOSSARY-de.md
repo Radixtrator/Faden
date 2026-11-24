@@ -25,6 +25,7 @@ The app's name is itself one of these words: a Reddit *thread* is a **Faden** on
 | thread (comment thread) | **Faden** (pl. Fäden) | ZD |
 | upvote | **Hochwähli** / **hochwählen** | ZD. "Upvoted" → "Hochgewählt" |
 | downvote | **Runterwähli** / **runterwählen** | ZD. "Downvoted" → "Runtergewählt" |
+| Reddit | **Lases** | ZD (read it → las es). Not in names or addresses: "reddit.com", "Boost for Reddit" stay |
 | edited (marker on comments) | **Edith** | ZD. Verb "edit" (button) → "Bearbeiten" |
 | meme | **Maimai** | ZD (if it ever appears) |
 | cake day | **Kuchentag** | ZD (if it ever appears) |
@@ -33,7 +34,6 @@ The app's name is itself one of these words: a Reddit *thread* is a **Faden** on
 
 | English | German | Notes |
 |---|---|---|
-| Reddit | Reddit | |
 | subreddit, community | **Sub** (der, pl. Subs) | "r/…" prefix stays. "Communities" in lists → "Subs" |
 | submission | Pfosten | |
 | crosspost | Crosspost / crossgepostet | |

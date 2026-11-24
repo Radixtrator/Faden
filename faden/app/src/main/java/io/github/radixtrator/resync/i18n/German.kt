@@ -1,8 +1,8 @@
 package io.github.radixtrator.resync.i18n
 
 /**
- * The German catalog: English source string → German. Everyday app German with a few r/ich_iel words (Pfosten,
- * Faden, Hochwähli, Edith); see faden/i18n/GLOSSARY-de.md. Split by area so no single map gets near the JVM's
+ * The German catalog: English source string → German. Everyday app German with a few r/ich_iel words (Lases,
+ * Pfosten, Faden, Hochwähli, Edith); see faden/i18n/GLOSSARY-de.md. Split by area so no single map gets near the JVM's
  * method size limit; each area file keeps its entries in the order its screens show them.
  */
 internal object German {
