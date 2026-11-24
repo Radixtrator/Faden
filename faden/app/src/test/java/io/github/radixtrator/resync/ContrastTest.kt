@@ -8,6 +8,7 @@ import io.github.radixtrator.resync.ui.theme.THEME_SEEDS
 import io.github.radixtrator.resync.ui.theme.ToneScheme
 import io.github.radixtrator.resync.ui.theme.Tones
 import io.github.radixtrator.resync.ui.theme.fadenColorScheme
+import io.github.radixtrator.resync.ui.settings.rowTint
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -64,6 +65,17 @@ class ContrastTest {
         // Classic is Sync's fixed palette: its failures are how Sync shipped, so they're printed, not asserted.
         if (classic.isNotEmpty()) println("Classic (Sync's palette) contrast shortfalls:\n" + classic.joinToString("\n"))
         assertTrue(bad.isEmpty(), "Contrast failures:\n" + bad.joinToString("\n"))
+    }
+
+    @Test
+    fun flashingSettingsRowStaysReadable() {
+        // A search result flashes the full primary behind its row; its text has to stay readable.
+        val (bad, classic) = failures { s ->
+            val flashing = rowTint(s, s.surface, s.onSurface, flash = 1f)
+            need("flashing row text", flashing.content, flashing.container, 4.5)
+        }
+        assertTrue(bad.isEmpty(), bad.joinToString("\n"))
+        assertTrue(classic.isEmpty(), "Classic: " + classic.joinToString("\n"))
     }
 
     @Test

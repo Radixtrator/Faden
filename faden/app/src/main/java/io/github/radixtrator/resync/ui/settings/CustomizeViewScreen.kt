@@ -61,7 +61,7 @@ import io.github.radixtrator.resync.i18n.t
  * the size half is here, as Small / Normal / Large.
  */
 @Composable
-fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
+fun CustomizeViewScreen(initial: PostLayout, container: AppContainer, highlight: String? = null) {
     val nav = LocalNavigator.current
     val settings by container.settings.settings.collectAsStateWithLifecycle()
     var layout by rememberSaveable { mutableStateOf(initial) }
@@ -91,7 +91,9 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                 )
             },
         ) { padding ->
-            Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
+            val scroll = rememberScrollState()
+            ProvideSettingsJump(highlight, scroll) { viewport ->
+            Column(Modifier.padding(padding).fillMaxSize().then(viewport).verticalScroll(scroll)) {
                 // Sync's chip row runs from the richest layout to the plainest.
                 LargeHeader(title = t("View type")) {
                     PostLayout.entries.reversed().forEach { option ->
@@ -159,6 +161,7 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                         }
                     }
                 }
+            }
             }
         }
     }

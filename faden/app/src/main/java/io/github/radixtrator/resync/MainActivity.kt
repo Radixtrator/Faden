@@ -285,10 +285,10 @@ private fun FadenNavHost(
                 entry<SubmitRoute> { route -> SubmitScreen(route, container) }
                 entry<ComposeRoute> { route -> ComposeScreen(route, container) }
                 // Sync's settings don't shrink with its base font size.
-                entry<SettingsRoute> { route -> FullSizeText { SettingsScreen(container, route.category) } }
+                entry<SettingsRoute> { route -> FullSizeText { SettingsScreen(container, route.category, route.highlight) } }
                 entry<ThemeManagementRoute> { FullSizeText { ThemeManagementScreen(container) } }
                 // Its preview stays at feed size; the screen sizes its own option rows like the settings.
-                entry<CustomizeViewRoute> { route -> CustomizeViewScreen(route.layout, container) }
+                entry<CustomizeViewRoute> { route -> CustomizeViewScreen(route.layout, container, route.highlight) }
                 entry<FilterEditorRoute> { route -> FullSizeText { FilterEditorScreen(route.type, container) } }
             },
         )

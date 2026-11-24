@@ -177,7 +177,7 @@ private val SettingsCategory.icon: ImageVector
 
 /** Sync's settings: the categories at [category] null, else that category's page. */
 @Composable
-fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) {
+fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null, highlight: String? = null) {
     val nav = LocalNavigator.current
     val settings by container.settings.settings.collectAsStateWithLifecycle()
     // The root page's search: null when closed.
@@ -234,7 +234,9 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                 }
             },
         ) { padding ->
-            Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
+            val scroll = rememberScrollState()
+            ProvideSettingsJump(highlight, scroll) { viewport ->
+            Column(Modifier.padding(padding).fillMaxSize().then(viewport).verticalScroll(scroll)) {
                 val q = query
                 if (category == null && q != null) {
                     SearchResults(
@@ -259,6 +261,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                 } else {
                     CategoryRows(container, category, settings)
                 }
+            }
             }
         }
     }
@@ -308,9 +311,16 @@ private fun SearchResults(
     }
     results.forEach { entry ->
         ListItem(
+            // The row itself scrolls into view and flashes, on the pages that can.
             onClick = {
                 onPick()
-                nav.push(entry.open(layout))
+                nav.push(
+                    when (val route = entry.open(layout)) {
+                        is SettingsRoute -> route.copy(highlight = entry.title)
+                        is CustomizeViewRoute -> route.copy(highlight = entry.title)
+                        else -> route
+                    },
+                )
             },
             overlineContent = { Text(entry.place) },
             supportingContent = entry.summary?.let { { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) } },
@@ -630,14 +640,16 @@ internal fun Section(title: String, divider: Boolean = true) {
 /** A switch row; tapping anywhere on it flips the switch. */
 @Composable
 internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val jump = rememberRowJump(title)
+    val style = rowStyle(jump.flash())
     // One target with toggle semantics: the row is the toggleable, the switch only shows the state.
     ListItem(
         checked = checked,
         onCheckedChange = onChange,
+        modifier = jump.modifier.then(style.modifier),
+        colors = style.colors,
         supportingContent = subtitle?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = null) },
-        // A checked ListItem tints and rounds its container by default; the switch already shows the state.
-        colors = ListItemDefaults.colors(selectedContainerColor = Color.Transparent),
     ) { Text(title) }
 }
 
@@ -645,8 +657,12 @@ internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange
 @Composable
 internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
+    val jump = rememberRowJump(title)
+    val style = rowStyle(jump.flash())
     ListItem(
         onClick = { open = true },
+        modifier = jump.modifier.then(style.modifier),
+        colors = style.colors,
         supportingContent = { Text(label(selected)) },
     ) { Text(title) }
     if (open) {

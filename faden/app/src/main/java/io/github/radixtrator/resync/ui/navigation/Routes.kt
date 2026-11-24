@@ -15,17 +15,17 @@ data object SetupRoute : NavKey
 @Serializable
 data object LoginRoute : NavKey
 
-/** Sync's settings: the category list, or with [category] that category's page. */
+/** Sync's settings: the category list, or with [category] that category's page; [highlight] is a row title to scroll to and flash. */
 @Serializable
-data class SettingsRoute(val category: SettingsCategory? = null) : NavKey
+data class SettingsRoute(val category: SettingsCategory? = null, val highlight: String? = null) : NavKey
 
 /** Sync's Theme management (Settings › Appearance): previews, saved themes, share and load. */
 @Serializable
 data object ThemeManagementRoute : NavKey
 
-/** Sync's Customize view ("View type" settings), opened on [layout]'s options. */
+/** Sync's Customize view ("View type" settings), opened on [layout]'s options; [highlight] as in [SettingsRoute]. */
 @Serializable
-data class CustomizeViewRoute(val layout: PostLayout = PostLayout.CARD) : NavKey
+data class CustomizeViewRoute(val layout: PostLayout = PostLayout.CARD, val highlight: String? = null) : NavKey
 
 /** Sync's FilterActivity: one list editor per filter [type] (Settings › Filters). */
 @Serializable
