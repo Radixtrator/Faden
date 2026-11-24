@@ -37,7 +37,7 @@ object SettingsIndex {
     private fun view(title: String, summary: String? = null, keywords: String = "") =
         SettingsEntry(title, summary, t("View type"), { CustomizeViewRoute(it) }, "layout card list post ansicht karte liste pfosten customize anpassen $keywords")
 
-    /** Plain words for each category, in English and everyday German (the German titles are playful). */
+    /** Plain words for each category, in English and everyday German (some German titles use ich_iel words). */
     private val SettingsCategory.keywords: String
         get() = when (this) {
             SettingsCategory.GENERAL -> "general allgemein"
